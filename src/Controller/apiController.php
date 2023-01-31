@@ -9,6 +9,7 @@ use Doctrine\Persistence\ManagerRegistry;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
 
 #[Route(path: "/api", name: "api_")]
 class apiController extends AbstractController
@@ -30,7 +31,12 @@ class apiController extends AbstractController
                 'predPointMesa' => $mesa->getPredPoint(),
             ];
         };
-        return $this->json($data);
+        $response = new JsonResponse();
+        $response->setContent(json_encode(array(
+            'success' => true,
+            'data' => $data,
+        )));
+        return $response;
     }
 
     //OBTENER UNA SOLA MESA
@@ -39,14 +45,35 @@ class apiController extends AbstractController
     {
         if ($idMesa) {
             $mesa = $mr->find($idMesa);
-            $data[] = [
-                'id' => $mesa->getId(),
-                'nombreMesa' => $mesa->getNomMesa(),
-                'anchoMesa' => $mesa->getAnchoMesa(),
-                'largoMesa' => $mesa->getLargoMesa(),
-                'predPointMesa' => $mesa->getPredPoint(),
-            ];
-            return $this->json($data);
+            if ($mesa != null) {
+                $data[] = [
+                    'id' => $mesa->getId(),
+                    'nombreMesa' => $mesa->getNomMesa(),
+                    'anchoMesa' => $mesa->getAnchoMesa(),
+                    'largoMesa' => $mesa->getLargoMesa(),
+                    'predPointMesa' => $mesa->getPredPoint(),
+                ];
+                $response = new JsonResponse();
+                $response->setContent(json_encode(array(
+                    'success' => true,
+                    'data' => $data,
+                )));
+                return $response;
+            } else {
+                $response = new JsonResponse();
+                $response->setContent(json_encode(array(
+                    'success' => false,
+                    'data' => 'No existe mesa con la ID introducida',
+                )));
+                return $response;
+            }
+        } else {
+            $response = new JsonResponse();
+            $response->setContent(json_encode(array(
+                'success' => false,
+                'data' => "",
+            )));
+            return $response;
         }
     }
 
@@ -63,7 +90,14 @@ class apiController extends AbstractController
         $entityManager = $doctrine->getManager();
         $entityManager->persist($mesa);
         $entityManager->flush();
-        return $this->json('Mesa creada correctamente con ID ' . $mesa->getId());
+
+        $response = new JsonResponse();
+        $response->setContent(json_encode(array(
+            'success' => true,
+            'data' => 'Mesa creada correctamente con ID'. $mesa->getId(),
+        )));
+        return $response;
+
     }
 
     //ACTUALIZAR UNA MESA
@@ -72,22 +106,45 @@ class apiController extends AbstractController
     {
         if ($idMesa) {
             $mesa = $mr->find($idMesa);
-            $mesa->setNomMesa($request->request->get('nombreMesa'));
-            $mesa->setAnchoMesa($request->request->get('anchoMesa'));
-            $mesa->setLargoMesa($request->request->get('largoMesa'));
-            $mesa->setPredPoint($request->request->get('predPointMesa'));
+            if ($mesa != null) {
+                $mesa->setNomMesa($request->request->get('nombreMesa'));
+                $mesa->setAnchoMesa($request->request->get('anchoMesa'));
+                $mesa->setLargoMesa($request->request->get('largoMesa'));
+                $mesa->setPredPoint($request->request->get('predPointMesa'));
 
-            $entityManager = $doctrine->getManager();
-            $entityManager->flush();
+                $entityManager = $doctrine->getManager();
+                $entityManager->flush();
 
-            $data[] = [
-                'id' => $mesa->getId(),
-                'nombreMesa' => $mesa->getNomMesa(),
-                'anchoMesa' => $mesa->getAnchoMesa(),
-                'largoMesa' => $mesa->getLargoMesa(),
-                'predPointMesa' => $mesa->getPredPoint(),
-            ];
-            return $this->json($data);
+                $data[] = [
+                    'id' => $mesa->getId(),
+                    'nombreMesa' => $mesa->getNomMesa(),
+                    'anchoMesa' => $mesa->getAnchoMesa(),
+                    'largoMesa' => $mesa->getLargoMesa(),
+                    'predPointMesa' => $mesa->getPredPoint(),
+                ];
+
+                $response = new JsonResponse();
+                $response->setContent(json_encode(array(
+                    'success' => true,
+                    'data' => $this->json($data),
+                )));
+                return $response;
+            } else {
+                $response = new JsonResponse();
+                $response->setContent(json_encode(array(
+                    'success' => false,
+                    'data' => 'No existe mesa con la ID introducida',
+                )));
+                return $response;
+            }
+            
+        } else {
+            $response = new JsonResponse();
+            $response->setContent(json_encode(array(
+                'success' => false,
+                'data' => $this->json('No se ha encontrado la mesa en nuestra base de datos'),
+            )));
+            return $response;
         }
 
     }
@@ -98,11 +155,32 @@ class apiController extends AbstractController
         if ($idMesa) {
             $mesa = $mr->find($idMesa);
 
-            $entityManager = $doctrine->getManager();
-            $entityManager->remove($mesa);
-            $entityManager->flush();
+            if ($mesa != null) {
+                $entityManager = $doctrine->getManager();
+                $entityManager->remove($mesa);
+                $entityManager->flush();
 
-            return $this->json('Mesa eliminida correctamente con ID ' . $idMesa);
+                $response = new JsonResponse();
+                $response->setContent(json_encode(array(
+                    'success' => true,
+                    'data' => 'Mesa eliminida correctamente con ID ' . $idMesa,
+                )));
+                return $response;
+            } else {
+                $response = new JsonResponse();
+                $response->setContent(json_encode(array(
+                    'success' => false,
+                    'data' => 'No existe mesa con la ID introducida',
+                )));
+                return $response;
+            }
+        } else {
+            $response = new JsonResponse();
+            $response->setContent(json_encode(array(
+                'success' => false,
+                'data' => 'No has introducido una ID para eliminar la mesa',
+            )));
+            return $response;
         }
     }
 }
